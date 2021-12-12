@@ -1,15 +1,15 @@
 class HitAndBlow {
   private readonly answerSource = [
-    "0",
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8,",
-    "9",
+    '0',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
   ];
   private answer: string[] = [];
   private tryCount = 0;
@@ -27,8 +27,13 @@ class HitAndBlow {
 
   async play() {
     const inputArr = (
-      await promptInput("「,」区切りで3つの数字を入力してください")
-    ).split(",");
+      await promptInput('「,」区切りで3つの数字を入力してください')
+    ).split(',');
+    if (!this.validate(inputArr)) {
+      printLine('無効な入力です');
+      await this.play();
+      return;
+    }
     const result = this.check(inputArr);
 
     if (result.hit !== this.answer.length) {
@@ -61,16 +66,27 @@ class HitAndBlow {
     printLine(`正解です！\n試行回数: ${this.tryCount}`);
     process.exit();
   }
+
+  private validate(inputArr: string[]) {
+    const isLengthValid = inputArr.length === this.answer.length;
+    const isAllAnswerSourceOption = inputArr.every((val) =>
+      this.answerSource.includes(val)
+    );
+    const isAllDifferentValues = inputArr.every(
+      (val, i) => inputArr.indexOf(val) === i
+    );
+    return isLengthValid && isAllAnswerSourceOption && isAllDifferentValues;
+  }
 }
 
 const printLine = (text: string, breakLine: boolean = true) => {
-  process.stdout.write(text + (breakLine ? "\n" : ""));
+  process.stdout.write(text + (breakLine ? '\n' : ''));
 };
 
 const promptInput = async (text: string) => {
   printLine(`\n${text}\n> `, false);
   const input: string = await new Promise((resolve) =>
-    process.stdin.once("data", (data) => resolve(data.toString()))
+    process.stdin.once('data', (data) => resolve(data.toString()))
   );
   return input.trim();
 };
