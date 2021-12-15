@@ -1,4 +1,40 @@
-type Mode = 'normal' | 'hard';
+const modes = ['normal', 'hard'] as const;
+type Mode = typeof modes[number];
+const nextActions = ['play again', 'exit'] as const;
+type NextAction = typeof nextActions[number];
+
+class GameProcedure {
+  private currentGameTitle = 'hit and blow';
+  private currentGame = new HitAndBlow();
+
+  public async start() {
+    await this.play();
+  }
+
+  private async play() {
+    printLine(`===\n${this.currentGameTitle} を開始します\n===`);
+    await this.currentGame.setting();
+    await this.currentGame.play();
+    this.currentGame.end();
+    const action = await promptSelect<NextAction>(
+      'ゲームを続けますか？',
+      nextActions
+    );
+    if (action == 'play again') {
+      await this.play();
+    } else if (action === 'exit') {
+      this.end();
+    } else {
+      const neverValue: never = action;
+      throw new Error(`${neverValue} is an invalid action.`);
+    }
+  }
+
+  private end() {
+    printLine('ゲームを終了しました。');
+    process.exit();
+  }
+}
 class HitAndBlow {
   private readonly answerSource = [
     '0',
@@ -17,10 +53,7 @@ class HitAndBlow {
   private mode: Mode = 'normal';
 
   async setting() {
-    this.mode = await promptSelect<Mode>('モードを選択してください', [
-      'normal',
-      'hard',
-    ]);
+    this.mode = await promptSelect<Mode>('モードを選択してください', modes);
     const answerLength = this.getAnswerLenght();
     while (this.answer.length < answerLength) {
       const randNum = Math.floor(Math.random() * this.answerSource.length);
@@ -73,7 +106,12 @@ class HitAndBlow {
 
   end() {
     printLine(`正解です！\n試行回数: ${this.tryCount}`);
-    process.exit();
+    this.reset();
+  }
+
+  private reset() {
+    this.answer = [];
+    this.tryCount = 0;
   }
 
   private validate(inputArr: string[]) {
@@ -135,8 +173,5 @@ const promptSelect = async <T extends string>(
 };
 
 (async () => {
-  const hitAndBlow = new HitAndBlow();
-  await hitAndBlow.setting();
-  await hitAndBlow.play();
-  await hitAndBlow.end();
+  new GameProcedure().start();
 })();
