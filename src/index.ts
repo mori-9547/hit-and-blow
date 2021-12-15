@@ -1,3 +1,4 @@
+type Mode = 'normal' | 'hard';
 class HitAndBlow {
   private readonly answerSource = [
     '0',
@@ -13,9 +14,14 @@ class HitAndBlow {
   ];
   private answer: string[] = [];
   private tryCount = 0;
+  private mode: Mode = 'normal';
 
-  setting() {
-    const answerLength = 3;
+  async setting() {
+    this.mode = await promptSelect<Mode>('モードを選択してください', [
+      'normal',
+      'hard',
+    ]);
+    const answerLength = this.getAnswerLenght();
     while (this.answer.length < answerLength) {
       const randNum = Math.floor(Math.random() * this.answerSource.length);
       const selectedItem = this.answerSource[randNum];
@@ -26,8 +32,11 @@ class HitAndBlow {
   }
 
   async play() {
+    const answerLength = this.getAnswerLenght();
     const inputArr = (
-      await promptInput('「,」区切りで3つの数字を入力してください')
+      await promptInput(
+        `「,」区切りで${answerLength}つの数字を入力してください`
+      )
     ).split(',');
     if (!this.validate(inputArr)) {
       printLine('無効な入力です');
@@ -77,6 +86,18 @@ class HitAndBlow {
     );
     return isLengthValid && isAllAnswerSourceOption && isAllDifferentValues;
   }
+
+  private getAnswerLenght() {
+    switch (this.mode) {
+      case 'normal':
+        return 3;
+      case 'hard':
+        return 4;
+      default:
+        const neverValue: never = this.mode;
+        throw new Error(`${neverValue}は無効なモードです。`);
+    }
+  }
 }
 
 const printLine = (text: string, breakLine: boolean = true) => {
@@ -85,15 +106,37 @@ const printLine = (text: string, breakLine: boolean = true) => {
 
 const promptInput = async (text: string) => {
   printLine(`\n${text}\n> `, false);
+  return readLine();
+};
+
+const readLine = async () => {
   const input: string = await new Promise((resolve) =>
     process.stdin.once('data', (data) => resolve(data.toString()))
   );
   return input.trim();
 };
 
+const promptSelect = async <T extends string>(
+  text: string,
+  values: readonly T[]
+): Promise<T> => {
+  printLine(`\n${text}`);
+  values.forEach((value) => {
+    printLine(`- ${value}`);
+  });
+  printLine(`> `, false);
+
+  const input = (await readLine()) as T;
+  if (values.includes(input)) {
+    return input;
+  } else {
+    return promptSelect<T>(text, values);
+  }
+};
+
 (async () => {
   const hitAndBlow = new HitAndBlow();
-  hitAndBlow.setting();
+  await hitAndBlow.setting();
   await hitAndBlow.play();
   await hitAndBlow.end();
 })();
